@@ -10,11 +10,7 @@
 #define TX_BUFFER_SIZE                      64
 #define LENGTH_CMD_CURTAIN_SET              6
 
-#if NUMBER_OF_ENDPOINTS > 1
-static BYTE g_byValue[NUMBER_OF_ENDPOINTS] = { 0 };
-#else /* NUMBER_OF_ENDPOINTS > 1 */
-static BYTE g_byValue[1] = { 0 };
-#endif /* NUMBER_OF_ENDPOINTS > 1 */
+static BYTE g_byValue[NUMBER_OF_CURTAIN] = { 0 };
 
 static BYTE g_byTxBuffer[TX_BUFFER_SIZE] = { 0 };    
 
@@ -37,7 +33,7 @@ HandleCurtain(
         byValue = ConvertValueMcuToZw(pCmd->lumi_curtain.level, DEVICE_CURTAIN);
 
 		if (pCmd->lumi_curtain.no <= NUMBER_OF_ENDPOINTS) {
-            g_byValue[pCmd->lumi_curtain.no - 1] = byValue;
+            g_byValue[pCmd->lumi_curtain.no - INDEX_CURTAIN_BASE] = byValue;
             HandleCurtainLevel(byValue, pCmd->lumi_curtain.no);
         }
         break;
@@ -62,7 +58,7 @@ SetCurtainLevel(
         g_byTxBuffer[3] = ConvertValueZwToMcu(byLevel, DEVICE_CURTAIN);
         SendTxData(CMD_SET_CTRL, g_byTxBuffer, LENGTH_CMD_CURTAIN_SET);
     }
-	else if (byEndpoint <= NUMBER_OF_ENDPOINTS) {
+	else if (byEndpoint <= INDEX_CURTAIN_BASE) {
         g_byTxBuffer[0] = byEndpoint; 
         g_byTxBuffer[1] = DEVICE_CURTAIN;
         g_byTxBuffer[2] = STATE_RUN;
@@ -85,7 +81,7 @@ GetCurtainLevel(
     if (byEndpoint == 0) {
         return g_byValue[0];
     } 
-	else if (byEndpoint <= NUMBER_OF_ENDPOINTS) {
+	else if (byEndpoint <= INDEX_CURTAIN_BASE) {
 		return g_byValue[byEndpoint - 1];
 	}
 	else {
@@ -110,7 +106,7 @@ StopCurtain(
         g_byTxBuffer[3] = 0; // Don't care
         SendTxData(CMD_SET_CTRL, g_byTxBuffer, LENGTH_CMD_CURTAIN_SET);
     }
-	else if (byEndpoint <= NUMBER_OF_ENDPOINTS) {
+	else if (byEndpoint <= INDEX_CURTAIN_BASE) {
 	    g_byTxBuffer[0] = byEndpoint;
         g_byTxBuffer[1] = DEVICE_CURTAIN;
         g_byTxBuffer[2] = STATE_STOP;

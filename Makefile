@@ -57,7 +57,7 @@ LIST_OF_LIBRARY:=\
 LIBRARY_DEFAULT:=slave_enhanced_232
 #---------------------------------------------------------------------------------------------------------
 # If not supplied by application here, the name of the application will be set equal to it's directory name.
-APP_NAME:=TOUCH_CURTAIN_X2_V240
+APP_NAME:=TOUCH_CURTAIN_X1_SWITCH_X2_V240
 #---------------------------------------------------------------------------------------------------------
 # List of all application modules.
 RELFILES:=\
@@ -70,6 +70,7 @@ RELFILES:=\
  serial.obj\
  setup_device.obj\
  convert_data.obj\
+ contact_man.obj\
  curtain_device.obj\
  serial_man.obj\
  process_man.obj\
@@ -89,6 +90,7 @@ RELFILES:=\
  CommandClassBasic.obj\
  CommandClassMultiLevelSwitch_v1.obj\
  CommandClassWindowCovering.obj\
+ CommandClassBinarySwitch.obj\
  ZW_io_handler.obj\
  io_zdp03a.obj\
  appl_timer.obj

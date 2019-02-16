@@ -46,12 +46,20 @@ g_EndPointFunctionality = {
 /******************************************************************************/
 /*                              PRIVATE DATA                                  */
 /******************************************************************************/
-static code BYTE g_EPSwitchNIF[] = {
+static code BYTE g_EPCurtainNIF[] = {
     COMMAND_CLASS_ZWAVEPLUS_INFO,
     COMMAND_CLASS_SWITCH_MULTILEVEL,
     COMMAND_CLASS_ASSOCIATION,
     COMMAND_CLASS_ASSOCIATION_GRP_INFO
 };
+
+static code BYTE g_EPSwitchNIF[] = {
+    COMMAND_CLASS_ZWAVEPLUS_INFO,
+    COMMAND_CLASS_SWITCH_BINARY,
+    COMMAND_CLASS_ASSOCIATION,
+    COMMAND_CLASS_ASSOCIATION_GRP_INFO
+};
+
 
 /******************************************************************************/
 /*                              EXPORTED DATA                                 */
@@ -75,14 +83,25 @@ void
 SetEndpointNIF(
     BYTE byEndpoint
 ) {
-    #if NUMBER_OF_ENDPOINTS > 1
-    g_EndpointNIF[byEndpoint - 1].genericDeviceClass  =  GENERIC_TYPE_WINDOW_COVERING;
-    g_EndpointNIF[byEndpoint - 1].specificDeviceClass =  SPECIFIC_TYPE_SIMPLE_WINDOW_COVERING;
-    g_EndpointNIF[byEndpoint - 1].sizeNIF = sizeof(g_EPSwitchNIF);
-    g_EndpointNIF[byEndpoint - 1].pNIF = g_EPSwitchNIF;
-    #else /* NUMBER_OF_ENDPOINTS > 1 */
-    UNUSED(byEndpoint);
-    #endif /* NUMBER_OF_ENDPOINTS > 1 */
+    switch (byEndpoint) {
+		case 1:
+   		{
+			g_EndpointNIF[byEndpoint - 1].genericDeviceClass  =  GENERIC_TYPE_WINDOW_COVERING;
+		    g_EndpointNIF[byEndpoint - 1].specificDeviceClass =  SPECIFIC_TYPE_SIMPLE_WINDOW_COVERING;
+		    g_EndpointNIF[byEndpoint - 1].sizeNIF = sizeof(g_EPCurtainNIF);
+		    g_EndpointNIF[byEndpoint - 1].pNIF = g_EPCurtainNIF;
+			break;
+		}
+		case 2:
+		case 3:
+		{
+			g_EndpointNIF[byEndpoint - 1].genericDeviceClass  =  GENERIC_TYPE_SWITCH_BINARY;
+			g_EndpointNIF[byEndpoint - 1].specificDeviceClass =  SPECIFIC_TYPE_POWER_SWITCH_BINARY;
+			g_EndpointNIF[byEndpoint - 1].sizeNIF = sizeof(g_EPSwitchNIF);
+			g_EndpointNIF[byEndpoint - 1].pNIF = g_EPSwitchNIF;
+			break;
+		}
+    }
 }
 
 /**

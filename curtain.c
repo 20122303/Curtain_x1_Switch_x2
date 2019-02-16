@@ -144,7 +144,8 @@ static code BYTE cmdClassListNonSecureNotIncluded[] = {
     COMMAND_CLASS_DEVICE_RESET_LOCALLY,
     COMMAND_CLASS_POWERLEVEL,
     COMMAND_CLASS_SWITCH_MULTILEVEL,
-    COMMAND_CLASS_WINDOW_COVERING
+    COMMAND_CLASS_WINDOW_COVERING,
+    COMMAND_CLASS_SWITCH_BINARY
 
     #ifdef MULTI_CHANNEL_TRANSPORT
     ,COMMAND_CLASS_MULTI_CHANNEL_V4
@@ -189,7 +190,8 @@ static BYTE cmdClassListSecure[] = {
     COMMAND_CLASS_DEVICE_RESET_LOCALLY,
     COMMAND_CLASS_POWERLEVEL,
     COMMAND_CLASS_SWITCH_MULTILEVEL,
-    COMMAND_CLASS_WINDOW_COVERING
+    COMMAND_CLASS_WINDOW_COVERING,
+    COMMAND_CLASS_SWITCH_BINARY
     
     #ifdef MULTI_CHANNEL_TRANSPORT
     ,COMMAND_CLASS_MULTI_CHANNEL_V4
@@ -216,7 +218,8 @@ APP_NODE_INFORMATION m_AppNIF = {
 
 const char GroupName[] = "Lifeline";
 static CMD_CLASS_GRP  agiTableLifeLine[] = { AGITABLE_LIFELINE_GROUP };
-static CMD_CLASS_GRP  agiTableLifeLineEP1_2[] = {AGITABLE_LIFELINE_GROUP_EP1_2_N};
+static CMD_CLASS_GRP  agiTableLifeLineEP1[] = {AGITABLE_LIFELINE_GROUP_EP1};
+static CMD_CLASS_GRP  agiTableLifeLineEP2_3[] = {AGITABLE_LIFELINE_GROUP_EP2_3};
 
 static ST_ENDPOINT_ICONS ZWavePlusEndpointIcons[] = { ENDPOINT_ICONS };
 
@@ -346,8 +349,9 @@ ApplicationInitSW(void) { /* IN   Nothing */
     AGI_Init();
     AGI_LifeLineGroupSetup(agiTableLifeLine, (sizeof(agiTableLifeLine) / sizeof(CMD_CLASS_GRP)),  GroupName EP_SUPPORT(COMMA ENDPOINT_ROOT));
 	
-	AGI_LifeLineGroupSetup(agiTableLifeLineEP1_2, (sizeof(agiTableLifeLineEP1_2) / sizeof(CMD_CLASS_GRP)),  GroupName EP_SUPPORT(COMMA ENDPOINT_1));
-	AGI_LifeLineGroupSetup(agiTableLifeLineEP1_2, (sizeof(agiTableLifeLineEP1_2) / sizeof(CMD_CLASS_GRP)),  GroupName EP_SUPPORT(COMMA ENDPOINT_2));
+	AGI_LifeLineGroupSetup(agiTableLifeLineEP1, (sizeof(agiTableLifeLineEP1) / sizeof(CMD_CLASS_GRP)),  GroupName EP_SUPPORT(COMMA ENDPOINT_1));
+	AGI_LifeLineGroupSetup(agiTableLifeLineEP2_3, (sizeof(agiTableLifeLineEP2_3) / sizeof(CMD_CLASS_GRP)),  GroupName EP_SUPPORT(COMMA ENDPOINT_2));
+	AGI_LifeLineGroupSetup(agiTableLifeLineEP2_3, (sizeof(agiTableLifeLineEP2_3) / sizeof(CMD_CLASS_GRP)),  GroupName EP_SUPPORT(COMMA ENDPOINT_3));
 
 
 	#if NUMBER_OF_ENDPOINTS > 1
@@ -476,6 +480,10 @@ Transport_ApplicationCommandHandlerEx(
         #endif
         break;
 
+    case COMMAND_CLASS_SWITCH_BINARY:
+        handleCommandClassBinarySwitch(rxOpt, pCmd, cmdLength);
+        break;
+
     case COMMAND_CLASS_WINDOW_COVERING:
         handleCommandClassWindowConvering(rxOpt, pCmd, cmdLength);
         break;
@@ -537,7 +545,7 @@ handleCommandClassVersionAppl(
         break;
 
     case COMMAND_CLASS_BASIC:
-        commandClassVersion =  CommandClassBasicVersionGet();
+        commandClassVersion = CommandClassBasicVersionGet();
         break;
 
     case COMMAND_CLASS_WINDOW_COVERING:
@@ -552,6 +560,10 @@ handleCommandClassVersionAppl(
         #elif  MULTILEVEL_SWITCH_VERSION == 3
 		commandClassVersion = CommandClassMultiLevelSwitchV3VersionGet();
         #endif
+        break;
+
+    case COMMAND_CLASS_SWITCH_BINARY:
+        commandClassVersion = CommandClassBinarySwitchVersionGet();
         break;
 
     #ifdef MULTI_CHANNEL_TRANSPORT
@@ -939,8 +951,14 @@ handleBasicSetCommand(
     BYTE value
     EP_SUPPORT(COMMA BYTE endpoint)
 ) {
-    NO_EP_SUPPORT(BYTE endpoint = 0;)
-    SetCurtainLevel(value, endpoint);
+	NO_EP_SUPPORT(BYTE endpoint = 0;)
+
+	if ((endpoint == 0) || (endpoint == 1))
+	    SetCurtainLevel(value, endpoint);
+	else {
+		ContactSetValue(value, endpoint);
+    	SerialSetValue (value, endpoint);
+	}
 }
 
 /**
@@ -954,9 +972,49 @@ getAppBasicReport(
     EP_SUPPORT(BYTE endpoint)
 ) {
     NO_EP_SUPPORT(BYTE endpoint = 0;)
-    UNUSED(endpoint);
-    return 0;
+
+	if ((endpoint == 0) || (endpoint == 1))
+		return GetCurtainLevel(endpoint);
+	else {
+		return ContactGetValue(endpoint);
+	}
 }
+
+/******************************************************************************/
+/*                              SWITCH BINARY                                 */
+/******************************************************************************/
+/**
+ * @func   handleAppltBinarySwitchGet
+ * @brief  Handling of a Application specific Binary Switch Report
+ * @param  None
+ * @retval None
+ */
+BYTE
+handleAppltBinarySwitchGet(
+    EP_SUPPORT(BYTE byEndpoint)
+) {
+    NO_EP_SUPPORT(BYTE byEndpoint = 0;)
+
+    return ContactGetValue(byEndpoint);
+}
+
+/**
+ * @func   handleApplBinarySwitchSet
+ * @brief  Handling of a Application specific Binary Switch Set
+ * @param  None
+ * @retval None
+ */
+void
+handleApplBinarySwitchSet(
+    CMD_CLASS_BIN_SW_VAL byValue
+    EP_SUPPORT(COMMA BYTE byEndpoint)
+) {
+    NO_EP_SUPPORT(BYTE byEndpoint = 0;)
+
+    ContactSetValue(byValue, byEndpoint);
+    SerialSetValue (byValue, byEndpoint);
+}
+
 
 /******************************************************************************/
 /*                            MULTILEVEL SWITCH                               */
@@ -1301,6 +1359,39 @@ HandleCurtainLevel(
 
 
 void
+HandleContactLevel(
+    BYTE byLevel,
+    BYTE byEndpoint
+) {
+	JOB_STATUS jobStatus = JOB_STATUS_BUSY;
+    BYTE byDestNode = AssociationGetLifeLineNodeID();
+
+    ContactSetValue(byLevel, byEndpoint);    
+    GetListLifeLineNode(byEndpoint);
+
+    if ((byDestNode == 0xFF) || (GetMyNodeID() == 0)) { return; }
+
+    if (!g_boGetFirstTime) {
+      	TRANSMIT_OPTIONS_TYPE_EX pTxOptionsEx;
+        pTxOptionsEx.sourceEndpoint = g_NodeList.sourceEndpoint;
+        pTxOptionsEx.txOptions = ZWAVE_PLUS_TX_OPTIONS;
+        pTxOptionsEx.securityScheme = SEC_SCHEME_AUTO;
+        memcpy((BYTE*)&pTxOptionsEx.destNode, (BYTE*)&g_NodeList.pCurrentNode->node, sizeof(MULTICHAN_DEST_NODE_ID));
+        
+        jobStatus = CmdClassBinarySwitchReportSendUnsolicited(
+                &pTxOptionsEx,
+                ContactGetValue(g_NodeList.sourceEndpoint),
+                Report_StateCompleted);
+
+        if (JOB_STATUS_SUCCESS != jobStatus) {
+             Report_StateCompleted(jobStatus);
+        }
+    }
+    g_boGetFirstTime = FALSE;
+}
+
+
+void
 GetListLifeLineNode(
     BYTE bySrcEndpoint
 ) {
@@ -1351,6 +1442,9 @@ PCB(KeyStatus) (
     switch (pCmd->lumi_common.type) {
     case DEVICE_CURTAIN:
         HandleCurtain(pCmd, byLength);
+        break;
+	case DEVICE_CONTACT:
+        HandleContact(pCmd, byLength);
         break;
     }
 }

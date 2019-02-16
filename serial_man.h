@@ -66,6 +66,7 @@ typedef void (CODE *report_func_callback)(void);
 void
 InitSerialMan();
 
+
 /**
  * @func   SerialSetValue
  * @brief  Send Serial Set
@@ -77,6 +78,7 @@ SerialSetValue(
     BYTE byValue,       /* IN: value */
     BYTE byEndpoint     /* IN: endpoint */
 );
+
 
 /**
  * @func   Serial_GetValueEP   

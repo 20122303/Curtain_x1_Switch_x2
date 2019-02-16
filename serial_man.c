@@ -62,6 +62,43 @@ InitSerialMan(
     InitSerial(ZW_INF_BAURATE);
 }
 
+
+void
+SerialSetValue(
+    BYTE byValue,
+    BYTE byEndpoint
+) {
+    if (0 == byEndpoint) {
+        #ifndef ALL_ON_OFF // Map 0 to ep 1
+        g_bTxBuffer[0] = 1;
+        g_bTxBuffer[1] = DEVICE_CONTACT;
+        g_bTxBuffer[2] = ConvertValueZwToMcu(byValue, DEVICE_CONTACT);
+        SendTxData(CMD_SET_CTRL, g_bTxBuffer, LENGTH_SINGLE_CMD_SET_CTRL);
+        #else /* ALL_ON_OFF */
+        BYTE i = 0;
+        #if NUMBER_OF_ENDPOINTS > 1
+        for (i = 0; i < NUMBER_OF_ENDPOINTS; i++) {
+            g_bTxBuffer[3*i] = i + 1;
+            g_bTxBuffer[3*i + 1] = DEVICE_CONTACT;
+            g_bTxBuffer[3*i + 2] = ConvertValueZwToMcu(byValue, DEVICE_CONTACT);
+        }
+        SendTxData(CMD_SET_CTRL, g_bTxBuffer, 2 + 3 * NUMBER_OF_ENDPOINTS);
+        #else /* NUMBER_OF_ENDPOINTS < 1 */        
+        g_bTxBuffer[0] = 1;
+        g_bTxBuffer[1] = DEVICE_CONTACT;
+        g_bTxBuffer[2] = ConvertValueZwToMcu(byValue, DEVICE_CONTACT);
+        SendTxData(CMD_SET_CTRL, g_bTxBuffer, LENGTH_SINGLE_CMD_SET_CTRL);
+        #endif /* NUMBER_OF_ENDPOINTS < 1 */
+        #endif /* ALL_ON_OFF */
+    } else {
+        g_bTxBuffer[0] = byEndpoint;
+        g_bTxBuffer[1] = DEVICE_CONTACT;
+        g_bTxBuffer[2] = ConvertValueZwToMcu(byValue, DEVICE_CONTACT);
+        SendTxData(CMD_SET_CTRL, g_bTxBuffer, LENGTH_SINGLE_CMD_SET_CTRL);
+    }
+}
+
+
 /**
  * @func   SerialGetValue   
  * @brief  None

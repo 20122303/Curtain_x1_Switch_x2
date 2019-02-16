@@ -4,30 +4,25 @@
  * Lumi, JSC.
  * All Rights Reserved
  *
+ *
  * Description: Include file for application
  *
  * Author: TrungTQ
  *
- * Last Changed By:  Author: trungtq
- * Revision:         Revision: 2.1
- * Last Changed:     Date: 2016-05-31 09:00:00 (Tue, 31 May 2016)
+ * Last Changed By:  $Author: trungtq $
+ * Revision:         $Revision: 2.1 $
+ * Last Changed:     $Date: 2016-06-21 15:25:00 (Tue, 21 Jun 2016) $
+ * 
  *
- *******************************************************************************/
-#ifndef _CURTAIN_H_
-#define _CURTAIN_H_
+ ******************************************************************************/
+#ifndef _STATE_ENDPOINT_H_
+#define _STATE_ENDPOINT_H_
 
 /******************************************************************************/
 /*                              INCLUDE FILES                                 */
 /******************************************************************************/
 #include <ZW_typedefs.h>
-#include <ZW_conbufio.h>
 #include "lumi_cmd.h"
-#include "serial_man.h"
-#include "setup_device.h"
-#include "report_man.h"
-#include "process_man.h"
-#include "curtain_device.h"
-#include "contact_man.h"
 
 /******************************************************************************/
 /*                     EXPORTED TYPES and DEFINITIONS                         */
@@ -48,5 +43,42 @@
 /******************************************************************************/
 /*                            EXPORTED FUNCTIONS                              */
 /******************************************************************************/
+/**
+ * @func   ContactGetValue
+ * @brief  Set value of endpoint
+ * @param  None
+ * @retval None
+ */
+void
+ContactSetValue(
+    BYTE byValue,
+    BYTE byEndpoint
+);
 
-#endif /* _CURTAIN_H_ */
+
+void 
+HandleContact(
+    CMD_BUFFER* pCmd, 
+    BYTE byLength
+);
+
+
+extern void
+HandleContactLevel(
+    BYTE byLevel,
+    BYTE byEndpoint
+);
+
+
+/**
+ * @func   ContactGetValue
+ * @brief  Get Value of endpoint
+ * @param  None
+ * @retval None
+ */
+BYTE
+ContactGetValue(
+    BYTE byEndpoint
+);
+
+#endif /* _STATE_ENDPOINT_H_ */
